@@ -56,7 +56,7 @@ async function getDecimalIP() {
             if (!ips.has(ip)) {
                 ips.add(ip);
                 const decimal = ipToDecimal(ip);
-                output.textContent = `IP: ${ip} → 十進数: ${decimal}`;
+                output.textContent = `私たちの数字 ${decimal}`;
 
                 // グラフ描画
                 const octets = ipToOctets(ip);
@@ -64,9 +64,9 @@ async function getDecimalIP() {
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ['Octet 1', 'Octet 2', 'Octet 3', 'Octet 4'],
+                        labels: ['1', '2', '3', '4'],
                         datasets: [{
-                            label: 'IPv4オクテット',
+                            label: '私たちの色',
                             data: octets,
                             backgroundColor: ['red', 'green', 'yellow', 'blue']
                         }]
