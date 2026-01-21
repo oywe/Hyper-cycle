@@ -2,25 +2,46 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>IPを十進数で表示</title>
+<title>占い色</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   body { font-family: sans-serif; padding: 20px; }
-  #output { font-size: 1.5em; color: blue; }
+  #output { font-size: 1.2em; margin-bottom: 20px; }
+  #avgColor { width: 100px; height: 100px; margin-top: 20px; border: 1px solid #000; }
+  canvas { max-width: 600px; max-height: 400px; }
 </style>
 </head>
 <body>
-<h1>過疎スタ民適正Id表示</h1>
+<h1>あなたの数字とあなたの色彩、平均色</h1>
 <div id="output">取得中...</div>
+<canvas id="ipChart"></canvas>
+<div>平均色:</div>
+<div id="avgColor"></div>
 
 <script>
-// IPアドレスを十進数に変換
+// IPを十進数に変換（安全版）
 function ipToDecimal(ip) {
-    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0);
+    return ip.split('.').reduce((acc, octet) => (acc * 256 + parseInt(octet)) >>> 0, 0);
 }
 
-// WebRTCでIPを取得
+// IPを4オクテットに変換
+function ipToOctets(ip) {
+    return ip.split('.').map(o => parseInt(o));
+}
+
+// 4オクテットから平均色（RGB）を計算
+function calculateAverageColor(octets) {
+    // Octet1→R, Octet2→G, Octet3→B, Octet4→半分ずつR,Gに加算
+    const r = Math.round((octets[0] + octets[3]/2));
+    const g = Math.round((octets[1] + octets[3]/2));
+    const b = octets[2];
+    return `rgb(${r},${g},${b})`;
+}
+
+// WebRTCでIP取得
 async function getDecimalIP() {
     const output = document.getElementById('output');
+    const avgDiv = document.getElementById('avgColor');
     const ips = new Set();
 
     const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
@@ -34,8 +55,29 @@ async function getDecimalIP() {
             const ip = ipMatch[1];
             if (!ips.has(ip)) {
                 ips.add(ip);
-                // 最初のIPを十進数で表示
-                output.textContent = ipToDecimal(ip);
+                const decimal = ipToDecimal(ip);
+                output.textContent = `IP: ${ip} → 十進数: ${decimal}`;
+
+                // グラフ描画
+                const octets = ipToOctets(ip);
+                const ctx = document.getElementById('ipChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Octet 1', 'Octet 2', 'Octet 3', 'Octet 4'],
+                        datasets: [{
+                            label: 'IPv4オクテット',
+                            data: octets,
+                            backgroundColor: ['red', 'green', 'yellow', 'blue']
+                        }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true, max: 255 } }
+                    }
+                });
+
+                // 平均色計算
+                avgDiv.style.backgroundColor = calculateAverageColor(octets);
             }
         }
     };
